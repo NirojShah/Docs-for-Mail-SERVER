@@ -1,0 +1,65 @@
+const Imap = require('imap');
+const MongoClient = require('mongodb').MongoClient;
+
+// IMAP server configuration
+const imapConfig = {
+  user: 'newuser@example.com',
+  password: 'password',
+  host: 'imap.example.com',
+  port: 993, // IMAP port (993 for SSL/TLS)
+  tls: true, // Use TLS/SSL
+};
+
+// MongoDB configuration
+const mongoUrl = 'mongodb://localhost:27017';
+const dbName = 'emails';
+
+// Connect to the MongoDB database
+MongoClient.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true }, (err, client) => {
+  if (err) {
+    console.error('Failed to connect to MongoDB:', err);
+    return;
+  }
+
+  console.log('Connected to MongoDB');
+
+  // Use the database
+  const db = client.db(dbName);
+
+  // Connect to the IMAP server
+  const imap = new Imap(imapConfig);
+
+  imap.once('ready', () => {
+    imap.openBox('INBOX', false, (err, box) => {
+      if (err) {
+        console.error('Failed to open INBOX:', err);
+        return;
+      }
+
+      console.log('Opened INBOX');
+
+      // Search for all unseen emails
+      imap.search(['UNSEEN'], (err, results) => {
+        if (err) {
+          console.error('Failed to search for unseen emails:', err);
+          return;
+        }
+
+        // Fetch each unseen email and save it to the database
+        results.forEach((uid) => {
+          const fetchOptions = {
+            bodies: '',
+            struct: true,
+          };
+
+
+
+
+Explanation:
+
+    The code starts by requiring the imap and mongodb modules to use in the script.
+    It defines the configuration for the IMAP server (imapConfig) and the MongoDB server (mongoUrl and dbName).
+    The script then connects to the MongoDB database using MongoClient.connect, providing the URL and database name. It checks for any errors in the connection process and logs a success message if the connection is successful.
+    After successfully connecting to MongoDB, the script creates an IMAP instance (imap) and sets up event listeners for the ready event. When the IMAP connection is ready, it opens the INBOX folder using imap.openBox.
+    It then searches for all unseen emails in the INBOX using imap.search(['UNSEEN'], ...). If there are unseen emails, it fetches each email's details and saves them to the MongoDB database.
+    The fetchOptions object specifies that the email bodies should be fetched (bodies: '') and the email structure should be returned (struct: true).
