@@ -1,0 +1,96 @@
+const express = require('express');
+const app = express();
+const port = 3000;
+const Imap = require('imap');
+const simpleParser = require('mailparser').simpleParser;
+
+// User sessions (in a real app, use a more secure method to manage sessions)
+const sessions = {};
+
+app.use(express.json());
+
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Authenticate user (e.g., check username/password against a database)
+    // In a real app, use a secure method to authenticate users
+    if (username === 'user1' && password === 'password1') {
+        // Create a new IMAP connection for the user
+        const imap = new Imap({
+            user: username,
+            password: password,
+            host: 'localhost',
+            port: 143,
+            tls: false,
+        });
+
+        // Store the IMAP connection in the session
+        sessions[username] = { imap };
+
+        imap.once('ready', () => {
+            res.send('Login successful');
+        });
+
+        imap.once('error', (err) => {
+            console.error('IMAP error:', err);
+            res.status(500).send('Error logging in');
+        });
+
+        imap.connect();
+    } else {
+        res.status(401).send('Unauthorized');
+    }
+});
+
+app.get('/emails', (req, res) => {
+    const { username } = req.query;
+    const session = sessions[username];
+
+    if (!session) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    const imap = session.imap;
+
+    imap.openBox('INBOX', false, (err, box) => {
+        if (err) {
+            console.error('Error opening INBOX:', err);
+            return res.status(500).send('Error fetching emails');
+        }
+
+        imap.search(['ALL'], (searchErr, results) => {
+            if (searchErr) {
+                console.error('Error searching emails:', searchErr);
+                return res.status(500).send('Error fetching emails');
+            }
+
+            const fetch = imap.fetch(results, { bodies: '' });
+
+            let emails = [];
+            fetch.on('message', (msg) => {
+                msg.on('body', (stream, info) => {
+                    simpleParser(stream, (parseErr, mail) => {
+                        if (parseErr) {
+                            console.error('Error parsing email:', parseErr);
+                            return res.status(500).send('Error parsing emails');
+                        }
+                        emails.push({
+                            subject: mail.subject,
+                            from: mail.from.text,
+                            text: mail.text,
+                            html: mail.html,
+                        });
+                    });
+                });
+            });
+
+            fetch.once('end', () => {
+                return res.json(emails);
+            });
+        });
+    });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
