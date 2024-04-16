@@ -1,0 +1,31 @@
+# Setting Up a Postfix Mail Server for Local Use
+
+# Install Postfix
+sudo apt-get update
+sudo apt-get install postfix
+
+# Configure Postfix
+# Edit /etc/postfix/main.cf:
+# myhostname = mail.trapnation.com
+# mydomain = trapnation.com
+# myorigin = $mydomain
+# inet_interfaces = all
+# mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+
+# Restart Postfix
+sudo systemctl restart postfix
+
+# Testing
+# Send a test email:
+# echo "Test email" | mail -s "Test" your_username
+
+# Add User Account
+# sudo adduser username
+
+# Set Up Email Forwarding (Optional)
+# Edit /etc/aliases:
+# username: external@example.com
+# Run sudo newaliases.
+
+# Set Password
+# sudo passwd username
