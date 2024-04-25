@@ -1,0 +1,33 @@
+const { exec } = require('child_process');
+
+// Function to create a new system user
+function createSystemUser(username, password) {
+    // Use the 'adduser' command to create a new system user
+    exec(`sudo adduser ${username} --disabled-password --gecos ""`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error creating user: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`Error: ${stderr}`);
+            return;
+        }
+        console.log(`User ${username} created successfully.`);
+        
+        // Set the user's password
+        exec(`echo "${username}:${password}" | sudo chpasswd`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error setting password: ${error.message}`);
+                return;
+            }
+            if (stderr) {
+                console.error(`Error: ${stderr}`);
+                return;
+            }
+            console.log(`Password set for user ${username}.`);
+        });
+    });
+}
+
+// Example usage
+createSystemUser('newuser', 'password123');
