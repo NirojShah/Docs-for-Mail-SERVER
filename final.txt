@@ -1,0 +1,101 @@
+1. Update Postfix Configuration:
+
+Edit the Postfix configuration file /etc/postfix/main.cf:
+
+bash
+
+sudo nano /etc/postfix/main.cf
+
+Make sure the following settings are configured:
+
+plaintext
+
+myhostname = qugateslocal.com
+mydomain = qugateslocal.com
+
+Save the file and exit the editor.
+2. Install and Configure Dovecot:
+
+First, install Dovecot:
+
+bash
+
+sudo apt update
+sudo apt install dovecot-core dovecot-imapd dovecot-lmtpd dovecot-pop3d
+
+Edit the Dovecot configuration file /etc/dovecot/dovecot.conf:
+
+bash
+
+sudo nano /etc/dovecot/dovecot.conf
+
+Set the following parameters:
+
+plaintext
+
+listen = *
+mail_location = mbox:~/mail:INBOX=/var/mail/%u
+
+Save the file and exit the editor.
+3. Create Virtual Domains and Email Accounts:
+
+Create a directory to store mailboxes:
+
+bash
+
+sudo mkdir -p /var/mail
+sudo groupadd -g 5000 vmail
+sudo useradd -g vmail -u 5000 vmail -d /var/mail
+sudo chown -R vmail:vmail /var/mail
+
+4. Update DNS or Hosts File:
+
+For local testing, update the hosts file:
+
+bash
+
+sudo nano /etc/hosts
+
+Add the following line at the end:
+
+plaintext
+
+127.0.0.1 qugateslocal.com
+
+Save the file and exit the editor.
+5. Restart Services:
+
+Restart Postfix and Dovecot for the changes to take effect:
+
+bash
+
+sudo systemctl restart postfix
+sudo systemctl restart dovecot
+
+6. Configure Thunderbird:
+
+    Open Thunderbird.
+    Go to File > New > Existing Mail Account.
+    Enter the account information:
+        Your Name: John Doe
+        Email Address: johndoe@qugateslocal.com
+        Password: [Your email password]
+    Click on Configure manually.
+    Enter the server settings:
+        Incoming (IMAP):
+            Server Name: qugateslocal.com
+            Port: 143
+            SSL: None (or STARTTLS if configured)
+            Authentication: Normal password
+        Outgoing (SMTP):
+            Server Name: qugateslocal.com
+            Port: 25
+            SSL: None (or STARTTLS if configured)
+            Authentication: Normal password
+    Click Done to complete the configuration.
+
+7. Testing:
+
+Test the setup by sending and receiving emails using Thunderbird with the configured email address ("johndoe@qugateslocal.com").
+
+This should give you a basic setup for hosting email accounts locally on Ubuntu 24.04 using Postfix and Dovecot, with a custom domain name "qugateslocal.com" for testing purposes.
