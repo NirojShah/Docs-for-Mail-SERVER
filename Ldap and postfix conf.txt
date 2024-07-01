@@ -1,0 +1,116 @@
+postfix main.cf
+
+virtual_mailbox_domains = example.com
+virtual_mailbox_maps = ldap:/etc/postfix/ldap-users.cf
+virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf
+virtual_transport = dovecot
+
+
+create /etc/postfix/ldap-users.cf
+
+server_host = ldap://192.168.30.27
+bind = yes
+bind_dn = uid=admin,dc=qugates,dc=in
+bind_pw = qugates123
+search_base = ou=people,dc=qugates,dc=in
+query_filter = (sAMAccountName=%s)
+result_attribute = mail
+result_format = %s/Maildir/
+
+
+
+
+create /etc/postfix/ldap-aliases.cf
+
+server_host = ldap://192.168.30.27
+bind = yes
+bind_dn = uid=admin,dc=qugates,dc=in
+bind_pw = qugates123
+search_base = ou=people,dc=qugates,dc=in
+query_filter = (mailAlias=%s)
+result_attribute = mail
+
+
+
+
+dovecot.conf
+
+
+!include conf.d/*.conf
+
+edit  conf.d/10-auth.conf 
+
+
+disable_plaintext_auth = yes
+auth_mechanisms = plain login
+!include auth-ldap.conf.ext
+
+
+
+/etc/dovecot/
+create auth-ldap.conf.ext
+
+passdb {
+  driver = ldap
+  args = /etc/dovecot/dovecot-ldap.conf.ext
+}
+
+userdb {
+  driver = ldap
+  args = /etc/dovecot/dovecot-ldap.conf.ext
+}
+
+
+
+/etc/dovecot/
+create dovecot-ldap.conf.ext
+
+
+hosts = 192.168.30.27
+dn = uid=admin,dc=qugates,dc=in
+dnpass = qugates123
+ldap_version = 3
+base = ou=people,dc=qugates,dc=in
+deref = never
+scope = subtree
+user_attrs = =home=/home/vmail/%{ldap:mail},=uid=5000,=gid=5000
+user_filter = (sAMAccountName=%u)
+pass_filter = (sAMAccountName=%u)
+
+
+
+Home Directory for Virtual Users
+
+
+mkdir -p /home/vmail
+chown -R vmail:vmail /home/vmail
+
+
+
+
+
+
+sudo systemctl restart postfix
+sudo systemctl restart dovecot
+
+test
+
+
+ldap connection test
+ldapsearch -x -H ldap://192.168.30.27 -D "uid=admin,dc=qugates,dc=in" -w qugates123 -b "ou=people,dc=qugates,dc=in" "(sAMAccountName=testuser)"
+
+
+
+to search user
+
+
+ldapsearch -x -LLL -b "ou=people,dc=qugates,dc=in" "(uid=jdoe)"
+
+
+
+
+
+
+
+
+
