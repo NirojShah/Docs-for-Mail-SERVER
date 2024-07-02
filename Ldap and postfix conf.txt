@@ -10,7 +10,7 @@ create /etc/postfix/ldap-users.cf
 
 server_host = ldap://192.168.30.27
 bind = yes
-bind_dn = uid=admin,dc=qugates,dc=in
+bind_dn = cn=admin,dc=qugates,dc=in
 bind_pw = qugates123
 search_base = ou=people,dc=qugates,dc=in
 query_filter = (sAMAccountName=%s)
@@ -24,7 +24,7 @@ create /etc/postfix/ldap-aliases.cf
 
 server_host = ldap://192.168.30.27
 bind = yes
-bind_dn = uid=admin,dc=qugates,dc=in
+bind_dn = cn=admin,dc=qugates,dc=in
 bind_pw = qugates123
 search_base = ou=people,dc=qugates,dc=in
 query_filter = (mailAlias=%s)
@@ -67,7 +67,7 @@ create dovecot-ldap.conf.ext
 
 
 hosts = 192.168.30.27
-dn = uid=admin,dc=qugates,dc=in
+dn = cn=admin,dc=qugates,dc=in
 dnpass = qugates123
 ldap_version = 3
 base = ou=people,dc=qugates,dc=in
@@ -97,7 +97,7 @@ test
 
 
 ldap connection test
-ldapsearch -x -H ldap://192.168.30.27 -D "uid=admin,dc=qugates,dc=in" -w qugates123 -b "ou=people,dc=qugates,dc=in" "(sAMAccountName=testuser)"
+ldapsearch -x -H ldap://192.168.30.27 -D "cn=admin,dc=qugates,dc=in" -w qugates123 -b "ou=people,dc=qugates,dc=in" "(sAMAccountName=testuser)"
 
 
 
