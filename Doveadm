@@ -1,0 +1,60 @@
+The doveadm command is a versatile tool used to manage and query various aspects of a Dovecot mail server. To use doveadm, you typically need to specify a subcommand. Here's a quick overview of some commonly used doveadm commands:
+
+User Commands:
+
+User Info: Get information about a user.
+bash
+Copy code
+doveadm user username
+Fetch User Mailboxes: List mailboxes of a user.
+bash
+Copy code
+doveadm mailbox list -u username
+Mailbox Commands:
+
+List Mailboxes: List all mailboxes.
+bash
+Copy code
+doveadm mailbox list -A
+Search Commands:
+
+Search Emails: Search for messages based on specific criteria.
+bash
+Copy code
+doveadm search -u username mailbox INBOX text "search_term"
+Expunge Commands:
+
+Expunge Emails: Expunge deleted messages from a mailbox.
+bash
+Copy code
+doveadm expunge -u username mailbox INBOX DELETED
+Sync Commands:
+
+Sync Mailboxes: Sync mailboxes from one server to another.
+bash
+Copy code
+doveadm sync -u username remote:user@server
+Quota Commands:
+
+Get Quota: Get quota usage for a user.
+bash
+Copy code
+doveadm quota get -u username
+Backup and Restore:
+
+Backup Mailboxes: Backup mailboxes of a user.
+bash
+Copy code
+doveadm backup -u username /backup/path
+If you provide more context on what you need to accomplish with doveadm, I can give more specific guidance or examples.
+
+
+
+
+
+
+
+
+
+
+ChatGPT can make mistakes. Check i
