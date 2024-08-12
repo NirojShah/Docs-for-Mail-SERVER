@@ -1,0 +1,320 @@
+using p-limit 
+
+const pLimit = require('p-limit');
+
+const fetchInboxMailList = async (imap, results, folder) => {
+  const limit = pLimit(10); // Limit concurrency to 10
+  const fetchPromises = results.map((result) => 
+    limit(() => fetchEmail(imap, result, folder))
+  );
+
+  let fetchedMails = await Promise.all(fetchPromises);
+  return fetchedMails;
+};
+
+const fetchEmail = (imap, result, folder) => {
+  return new Promise((resolve, reject) => {
+    const f = imap.fetch(result, { bodies: "", struct: true });
+
+    f.on("message", (msg) => {
+      let rawEmail = "";
+      let attributes = null;
+
+      msg.on("body", (stream) => {
+        stream.on("data", (chunk) => {
+          rawEmail += chunk.toString("utf8");
+        });
+
+        stream.on("end", () => {
+          simpleParser(rawEmail)
+            .then((parsed) => {
+              const data = {
+                from: parsed.from.value[0],
+                to: parsed.to.value[0],
+                subject: parsed.subject,
+                date: attributes.date,
+                attachmentStatus: parsed.attachments.length > 0,
+                date: parsed.date,
+                mailId: attributes.uid,
+                flags: attributes.flags,
+                messageId: parsed.messageId,
+                references: parsed.references || [],
+                inReplyTo: parsed.inReplyTo || [],
+                folder: folder,
+                body: parsed.text.slice(0, 100),
+              };
+              resolve(data);
+            })
+            .catch((parseErr) => {
+              console.error("Error parsing email:", parseErr);
+              reject(parseErr);
+            });
+        });
+      });
+
+      msg.on("attributes", (attrs) => {
+        attributes = attrs;
+      });
+    });
+
+    f.once("error", (fetchErr) => reject(`Error fetching emails: ${fetchErr}`));
+  });
+};
+
+
+
+and fetch only the require feild :
+
+const fetchEmail = (imap, result, folder) => {
+  return new Promise((resolve, reject) => {
+    const f = imap.fetch(result, { bodies: "HEADER.FIELDS (FROM TO SUBJECT DATE)", struct: true });
+    
+    // The rest of the code remains the same
+  });
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+chunk : 
+
+const inboxMailList = async (req, res) => {
+  const folders = [req.query.folderName];
+  const xyz = myCredentials(req.headers.authorization.split(" ")[1]);
+
+  res.setHeader('Transfer-Encoding', 'chunked');
+  res.setHeader('Content-Type', 'application/json');
+
+  try {
+    for (const folder of folders) {
+      const imapConfig = imapInstance(req.mail.fullName, req.mail.password);
+      const imap = new Imap(imapConfig);
+
+      await new Promise((resolve, reject) => {
+        imap.once('ready', async () => {
+          try {
+            await openFolder(imap, folder);
+            const results = await searchEmails(imap);
+
+            for (let i = 0; i < results.length; i += 100) {
+              const batch = results.slice(i, i + 100);
+              const fetchedEmails = await fetchInboxMailList(imap, batch, folder);
+
+              // Send batch to the client
+              res.write(JSON.stringify({ status: 'success', mails: fetchedEmails }) + '\n');
+            }
+          } catch (err) {
+            reject(err);
+          } finally {
+            imap.end();
+          }
+        });
+
+        imap.once('error', (err) => {
+          reject(err);
+        });
+
+        imap.once('end', () => {
+          resolve();
+        });
+
+        imap.connect();
+      });
+    }
+  } catch (err) {
+    res.write(JSON.stringify({ status: 'error', message: 'Internal Server Error' }) + '\n');
+  } finally {
+    res.end();
+  }
+};
+
+
+
+
+const inboxMailList = async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    const folders = [req.query.folderName];
+    const xyz = myCredentials(req.headers.authorization.split(" ")[1]);
+
+    for (const folder of folders) {
+      const imapConfig = imapInstance(req.mail.fullName, req.mail.password);
+      const imap = new Imap(imapConfig);
+
+      await new Promise((resolve, reject) => {
+        imap.once('ready', async () => {
+          try {
+            await openFolder(imap, folder);
+            const results = await searchEmails(imap);
+
+            for (let i = 0; i < results.length; i += 100) {
+              const batch = results.slice(i, i + 100);
+              const fetchedEmails = await fetchInboxMailList(imap, batch, folder);
+
+              // Send data to the client as SSE
+              res.write(`data: ${JSON.stringify({ status: 'success', mails: fetchedEmails })}\n\n`);
+            }
+          } catch (err) {
+            reject(err);
+          } finally {
+            imap.end();
+          }
+        });
+
+        imap.once('error', (err) => {
+          reject(err);
+        });
+
+        imap.once('end', () => {
+          resolve();
+        });
+
+        imap.connect();
+      });
+    }
+
+    res.write('event: done\ndata: {}\n\n');
+  } catch (err) {
+    res.write(`data: ${JSON.stringify({ status: 'error', message: 'Internal Server Error' })}\n\n`);
+  } finally {
+    res.end();
+  }
+};
+
+
+
+
+
+front end -- implementation : 
+
+
+
+const eventSource = new EventSource('/path/to/inboxMailList');
+
+eventSource.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  // Handle each batch of emails here
+  console.log(data.mails);
+};
+
+eventSource.addEventListener('done', function() {
+  eventSource.close();
+  console.log('All emails processed');
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+send mails as chunk 
+
+
+
+
+const inboxMailList = async (req, res) => {
+  const folders = [req.query.folderName];
+  const xyz = myCredentials(req.headers.authorization.split(" ")[1]);
+
+  res.setHeader('Transfer-Encoding', 'chunked');
+  res.setHeader('Content-Type', 'application/json');
+
+  try {
+    for (const folder of folders) {
+      const imapConfig = imapInstance(req.mail.fullName, req.mail.password);
+      const imap = new Imap(imapConfig);
+
+      await new Promise((resolve, reject) => {
+        imap.once('ready', async () => {
+          try {
+            await openFolder(imap, folder);
+            const results = await searchEmails(imap);
+
+            for (let i = 0; i < results.length; i += 100) {
+              const batch = results.slice(i, i + 100);
+              const fetchedEmails = await fetchInboxMailList(imap, batch, folder);
+
+              // Send each batch to the client
+              res.write(JSON.stringify({ status: 'success', mails: fetchedEmails }) + '\n');
+            }
+          } catch (err) {
+            res.write(JSON.stringify({ status: 'error', message: err.message }) + '\n');
+            reject(err);
+          } finally {
+            imap.end();
+          }
+        });
+
+        imap.once('error', (err) => {
+          res.write(JSON.stringify({ status: 'error', message: err.message }) + '\n');
+          reject(err);
+        });
+
+        imap.once('end', () => {
+          resolve();
+        });
+
+        imap.connect();
+      });
+    }
+
+    // End the response after all emails have been processed
+    res.end();
+  } catch (err) {
+    res.write(JSON.stringify({ status: 'error', message: 'Internal Server Error' }) + '\n');
+    res.end();
+  }
+};
+
+
+
+
+const eventSource = new EventSource('/path/to/inboxMailList');
+
+eventSource.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  if (data.status === 'success') {
+    // Handle the batch of emails
+    console.log(data.mails);
+  } else if (data.status === 'error') {
+    console.error('Error:', data.message);
+  }
+};
+
+eventSource.addEventListener('done', function() {
+  eventSource.close();
+  console.log('All emails processed');
+});
